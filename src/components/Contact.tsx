@@ -16,10 +16,25 @@ import CodeSectionHeader from "@/components/ui/CodeSectionHeader";
 
 type FormStatus = "idle" | "sending" | "success" | "error";
 
+const accessKey = process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY;
+
 function openMailto(name: string, email: string, message: string) {
   const subject = encodeURIComponent(`Portfolio message from ${name}`);
   const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`);
   window.location.href = `mailto:${siteConfig.email}?subject=${subject}&body=${body}`;
+}
+
+async function parseJsonResponse(response: Response) {
+  const raw = await response.text();
+  if (!raw) {
+    throw new Error("Empty response from contact service.");
+  }
+
+  try {
+    return JSON.parse(raw) as { success?: boolean; message?: string };
+  } catch {
+    throw new Error("Unexpected response from contact service.");
+  }
 }
 
 export default function Contact() {
@@ -34,33 +49,42 @@ export default function Contact() {
     const name = String(formData.get("name") ?? "").trim();
     const email = String(formData.get("email") ?? "").trim();
     const message = String(formData.get("message") ?? "").trim();
+    const botcheck = String(formData.get("botcheck") ?? "").trim();
+
+    if (botcheck) return;
 
     setStatus("sending");
     setErrorMessage("");
 
+    if (!accessKey) {
+      openMailto(name, email, message);
+      form.reset();
+      setStatus("success");
+      setTimeout(() => setStatus("idle"), 5000);
+      return;
+    }
+
     try {
-      const response = await fetch("/api/contact", {
+      const response = await fetch("https://api.web3forms.com/submit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, message }),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          access_key: accessKey,
+          name,
+          email,
+          message,
+          subject: `Portfolio message from ${name}`,
+          botcheck,
+        }),
       });
 
-      const data = (await response.json()) as {
-        success?: boolean;
-        error?: string;
-        fallback?: string;
-      };
+      const data = await parseJsonResponse(response);
 
-      if (response.status === 503 && data.fallback === "mailto") {
-        openMailto(name, email, message);
-        form.reset();
-        setStatus("success");
-        setTimeout(() => setStatus("idle"), 5000);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "Failed to send message.");
+      if (!response.ok || !data.success) {
+        throw new Error(data.message ?? "Failed to send message.");
       }
 
       form.reset();
@@ -162,6 +186,14 @@ export default function Contact() {
               <p className="mb-6 font-mono text-xs text-syntax-comment">
                 {"// recruiters & hiring managers welcome"}
               </p>
+
+              <input
+                type="checkbox"
+                name="botcheck"
+                className="hidden"
+                tabIndex={-1}
+                autoComplete="off"
+              />
 
               <div className="mb-4">
                 <label htmlFor="name" className="mb-1.5 block font-mono text-xs text-syntax-property">

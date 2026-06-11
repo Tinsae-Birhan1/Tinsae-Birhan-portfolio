@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { siteConfig } from "@/data/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,23 +14,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tinsae Birhan | Software Engineer, Contact Me",
-  description:
-    "Contact Tinsae Birhan, Software Engineer with 4.5+ years building APIs, business platforms, and full stack apps for international teams. Remote ready.",
+  title: `${siteConfig.name} | ${siteConfig.title}, Contact Me`,
+  description: siteConfig.tagline,
   keywords: [
     "Tinsae Birhan",
     "contact software engineer",
     "backend developer",
+    "full stack engineer",
+    "remote developer Ethiopia",
     "NestJS developer",
     "ERPNext developer",
-    "remote developer Ethiopia",
-    "full stack engineer",
   ],
-  authors: [{ name: "Tinsae Birhan" }],
+  authors: [{ name: siteConfig.name }],
   openGraph: {
-    title: "Tinsae Birhan | Software Engineer, Contact Me",
-    description:
-      "4.5+ years shipping payroll, disbursement, and SaaS products for US startups. Open to full time & contract roles.",
+    title: `${siteConfig.name} | ${siteConfig.title}`,
+    description: siteConfig.tagline,
     type: "website",
   },
 };
